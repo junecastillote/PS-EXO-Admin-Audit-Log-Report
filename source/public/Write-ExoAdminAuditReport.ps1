@@ -22,9 +22,6 @@ Function Write-ExoAdminAuditReport {
         $ReportFile
     )
     Begin {
-
-        # SayInfo "I'm ready to start writing the report"
-
         #Region - Is Exchange Connected?
         if (!($Organization)) {
             SayInfo "You did not specify the name of the organization. That probably means you want me to get it for you instead."
@@ -48,7 +45,7 @@ Function Write-ExoAdminAuditReport {
         #EndRegion
 
         if ($ReportFile) {
-            New-Item -ItemType File -Path $ReportFile -Force | Out-Null
+            New-Item -ItemType File -Path $ReportFile -Force -ErrorAction Stop | Out-Null
         }
 
         # For use later to determine the oldest and newest entry
@@ -60,15 +57,12 @@ Function Write-ExoAdminAuditReport {
         $css = Get-Content (($ModuleInfo.ModuleBase.ToString()) + '\source\private\style.css') -Raw
         $title = "Exchange Admin Audit Log Report for $($Organization)"
 
-        $logCount = 1
-
-        # $FormatEnumerationLimit = -1
+        $logCount = 0
     }
 
     Process {
-        foreach ($item in ($InputObject | Sort-Object CreationDate)) {
+        foreach ($item in ($InputObject)) {
             $audit_data = ($item.AuditData | ConvertFrom-Json)
-            # if ($audit_data.UserType -eq 'Admin') {
             $dateCollection += $audit_data.CreationTime
             $html2 += '<tr><td>'
             $html2 += '<b>Time: </b>' + (Get-Date $item.CreationDate -Format "yyyy-MM-dd hh:mm:ss (zzzz)") + '<br>'
@@ -93,10 +87,14 @@ Function Write-ExoAdminAuditReport {
             }
             $html2 += '</td></tr>'
             $logCount = $logCount + 1
-            # }
         }
     }
     End {
+
+        if ($logCount -eq 0) {
+            SayError "The report data is empty."
+            Return $null
+        }
 
         $dateCollection = $dateCollection | Sort-Object
         $startDate = $dateCollection[0]
@@ -120,8 +118,8 @@ Function Write-ExoAdminAuditReport {
         $html1 += '<tr><td class="head"><b>' + 'Summary' + '</b></td></tr>'
         $html1 += '<tr><td><b>Report Time:</b> ' + $today + '<br>'
         $html1 += '<b>Coverage:</b><br>'
-        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>From:</b> ' + $startDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") + '<br>'
-        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>To:</b> ' + $endDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") + '<br>'
+        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Oldest:</b> ' + $startDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") + '<br>'
+        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Newset:</b> ' + $endDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") + '<br>'
         $html1 += '<b>Activity Count:</b> ' + $logCount
         $html1 += '</td></tr>'
         $html1 += '<tr><td class="head"</td></tr>'
@@ -159,12 +157,12 @@ Function Write-ExoAdminAuditReport {
             $htmlBody
         }
         SayInfo "Audit logs HTML report complete."
-        Say "........................................."
-        Say "Report time: $($today)"
-        Say "Report coverage:"
-        Say "       From: $($startDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") )"
-        Say "       To  : $($endDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") )"
-        Say "Activity count: $($logCount)"
-        Say "........................................."
+        Say "......................................................................"
+        Say "Report time      : $($today)"
+        Say "Activity count   : $($logCount)"
+        Say "Report coverage  - "
+        Say "         Oldest  : $($startDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") )"
+        Say "         Newest  : $($endDate.ToString("yyyy-MM-dd HH:mm:ss (zzzz)") )"
+        Say "......................................................................"
     }
 }
