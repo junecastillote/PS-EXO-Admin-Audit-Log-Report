@@ -24,19 +24,19 @@ Function Write-ExoAdminAuditReport {
     Begin {
         #Region - Is Exchange Connected?
         if (!($Organization)) {
-            SayInfo "You did not specify the name of the organization. That probably means you want me to get it for you instead."
+            SayInfo "You did not specify the name of the organization."
             try {
-                SayInfo "Ok then, I'm trying to get your organization name now. Seriously, you ask too much."
+                SayInfo "Attempting to get the organization name."
                 $Organization = (Get-OrganizationConfig -ErrorAction STOP).DisplayName
                 SayInfo "Found it! Your organization name is $($Organization)"
             }
             catch [System.Management.Automation.CommandNotFoundException] {
-                SayWarning "It looks like you forgot to connect to Remote Exchange PowerShell. You should do that first before asking me to do stuff for you."
+                SayWarning "It looks like you forgot to connect to Remote Exchange PowerShell. You should do that first."
                 SayWarning "Or you can just specify your organization name next time so that I don't have to look for it for you. The parameter is -Organization <organization name>."
                 return $null
             }
             catch {
-                SayError "Something is wrong. You can see the error below. I can't tell you how to fix it, but you should fix it before asking me to stuff for you."
+                SayError "Something is wrong. You can see the error below. I can't tell you how to fix it, but you should fix it before retrying."
                 SayError $_.Exception.Message
                 return $null
             }
@@ -100,7 +100,7 @@ Function Write-ExoAdminAuditReport {
         $startDate = $dateCollection[0]
         $endDate = $dateCollection[-1]
         SayInfo "Your report covers the period of $($startDate) to $($endDate)"
-        SayInfo "I am creating your HTML report now... in my memory."
+        SayInfo "I am creating your HTML report now...."
         #$html1 = @()
         $html1 += '<html><head><title>' + $title + '</title>'
         $html1 += '<style type="text/css">'
@@ -139,13 +139,12 @@ Function Write-ExoAdminAuditReport {
         $htmlBody = ($html1 + $html2 + $html3) -join "`n"
         if ($ReportFile) {
             try {
-                $htmlBody | Out-File $ReportFile -Encoding UTF8 -Force
-                SayInfo "I saved the HTML report to a file, your majesty."
+                $htmlBody | Out-File $ReportFile -Encoding UTF8 -Force -ErrorAction Stop
                 SayInfo "You can find the report at $((Resolve-Path $ReportFile).Path)."
                 # return $htmlBody
             }
             catch {
-                SayError "Something is wrong. You can see the error below. Because of it I cannot save your report to file. Fix it."
+                SayError "Something is wrong. You can see the error below. Because of it I cannot save your report to file. Please fix it."
                 SayError $_.Exception.Message
                 return $null
             }
