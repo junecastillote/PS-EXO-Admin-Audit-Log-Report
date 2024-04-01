@@ -43,14 +43,12 @@ Function Get-ExoAdminAuditLogs {
         $null = (Get-OrganizationConfig -ErrorAction STOP).DisplayName
     }
     catch [System.Management.Automation.CommandNotFoundException] {
-        SayWarning "It looks like you forgot to connect to Remote Exchange PowerShell. You should do that first before asking me to do stuff for you."
-
+        SayWarning "It looks like you forgot to connect to Remote Exchange PowerShell. You should do that first."
         Return $null
     }
     catch {
-        SayError "Something is wrong. You can see the error below. You should fix it before asking me to try again."
+        SayError "Something is wrong. You can see the error below. Fix it and try again."
         SayError $_.Exception.Message
-
         Return $null
     }
     #EndRegion
@@ -61,7 +59,7 @@ Function Get-ExoAdminAuditLogs {
     }
 
     #EndRegion
-    SayInfo " I'm using the parameters you gave me:"
+    SayInfo "Using the following parameters:"
     Say "......................................................................"
     Say "Start Date: $($StartDate)"
     Say "End Date: $($EndDate)"
