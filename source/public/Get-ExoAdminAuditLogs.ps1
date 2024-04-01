@@ -62,13 +62,13 @@ Function Get-ExoAdminAuditLogs {
 
     #EndRegion
     SayInfo " I'm using the parameters you gave me:"
-    Say "........................................."
+    Say "......................................................................"
     Say "Start Date: $($StartDate)"
     Say "End Date: $($EndDate)"
     Say "Page Size: $($PageSize)"
     Say "Display Progress Bar: $($ShowProgress)"
     Say "Maximum Retries: $($MaxRetryCount)"
-    Say "........................................."
+    Say "......................................................................"
 
     if ([datetime]($StartDate) -eq [datetime]$EndDate) {
         SayError "The StartDate and EndDate cannot be the same values."
