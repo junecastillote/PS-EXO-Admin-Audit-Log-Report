@@ -74,7 +74,7 @@ Function Write-ExoAdminAuditReport {
             foreach ($param in $audit_data.Parameters) {
                 if ($TruncateLongValue) {
                     if ($param.Value.length -gt $TruncateLongValue) {
-                        # $paramValue = ((($param.Value).ToString().SubString(0, $TruncateLongValue)) + "...")
+                        $paramValue = ((($param.Value).ToString().SubString(0, $TruncateLongValue)) + "...")
                     }
                     else {
                         $paramValue = $param.Value
