@@ -19,7 +19,7 @@ Function Write-ExoAdminAuditReport {
 
         [parameter()]
         [string]
-        $ReportFile
+        $OutHtml
     )
     Begin {
         #Region - Is Exchange Connected?
@@ -44,8 +44,8 @@ Function Write-ExoAdminAuditReport {
 
         #EndRegion
 
-        if ($ReportFile) {
-            New-Item -ItemType File -Path $ReportFile -Force -ErrorAction Stop | Out-Null
+        if ($OutHtml) {
+            New-Item -ItemType File -Path $OutHtml -Force -ErrorAction Stop | Out-Null
         }
 
         # For use later to determine the oldest and newest entry
@@ -58,14 +58,24 @@ Function Write-ExoAdminAuditReport {
         $title = "Exchange Admin Audit Log Report for $($Organization)"
 
         $logCount = 0
+
+        [System.Collections.ArrayList]$data = @()
     }
 
     Process {
-        foreach ($item in ($InputObject)) {
+
+        foreach ($item in $InputObject) {
+            $null = $data.Add($item)
+        }
+
+    }
+    End {
+        foreach ($item in ($data | Sort-Object CreationDate -Descending)) {
             $audit_data = ($item.AuditData | ConvertFrom-Json)
-            $dateCollection += $audit_data.CreationTime
+            # $dateCollection += ($audit_data.CreationTime)
+            $dateCollection += $item.CreationDate.ToLocalTime()
             $html2 += '<tr><td>'
-            $html2 += '<b>Time: </b>' + (Get-Date $item.CreationDate -Format "yyyy-MM-dd hh:mm:ss (zzzz)") + '<br>'
+            $html2 += '<b>Time: </b>' + (Get-Date $item.CreationDate.ToLocalTime() -Format "yyyy-MM-dd HH:mm:ss (zzzz)") + '<br>'
             $html2 += '<b>Record Id: </b>' + $audit_data.Id + '<br>'
             $html2 += '<b>Admin Id: </b>' + $audit_data.UserId + '<br>'
             $html2 += '<b>Target Object: </b>' + $audit_data.ObjectId + '<br>'
@@ -83,13 +93,15 @@ Function Write-ExoAdminAuditReport {
                 else {
                     $paramValue = $param.Value
                 }
+
+                ## This line prevents rendering the HTML code in auto-reply messages.
+                $paramValue = $paramValue.ToString().Replace('<', '&lt;').Replace('>', '&gt;')
+
                 $html2 += ('<b>' + $param.Name + ':</b> ' + $paramValue + '<br>')
             }
             $html2 += '</td></tr>'
-            $logCount = $logCount + 1
+            $logCount++
         }
-    }
-    End {
 
         if ($logCount -eq 0) {
             SayError "The report data is empty."
@@ -97,8 +109,8 @@ Function Write-ExoAdminAuditReport {
         }
 
         $dateCollection = $dateCollection | Sort-Object
-        $startDate = [datetime]$dateCollection[0]
-        $endDate = [datetime]$dateCollection[-1]
+        $startDate = $dateCollection[0]
+        $endDate = $dateCollection[-1]
         SayInfo "Your report covers the period of $($startDate) to $($endDate)"
         SayInfo "I am creating your HTML report now...."
         #$html1 = @()
@@ -137,10 +149,10 @@ Function Write-ExoAdminAuditReport {
         $html3 += '</body></html>'
 
         $htmlBody = ($html1 + $html2 + $html3) -join "`n"
-        if ($ReportFile) {
+        if ($OutHtml) {
             try {
-                $htmlBody | Out-File $ReportFile -Encoding UTF8 -Force -ErrorAction Stop
-                SayInfo "You can find the report at $((Resolve-Path $ReportFile).Path)."
+                $htmlBody | Out-File $OutHtml -Encoding UTF8 -Force -ErrorAction Stop
+                SayInfo "You can find the report at $((Resolve-Path $OutHtml).Path)."
                 # return $htmlBody
             }
             catch {
