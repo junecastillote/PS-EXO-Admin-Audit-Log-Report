@@ -97,8 +97,8 @@ Function Write-ExoAdminAuditReport {
         }
 
         $dateCollection = $dateCollection | Sort-Object
-        $startDate = $dateCollection[0]
-        $endDate = $dateCollection[-1]
+        $startDate = [datetime]$dateCollection[0]
+        $endDate = [datetime]$dateCollection[-1]
         SayInfo "Your report covers the period of $($startDate) to $($endDate)"
         SayInfo "I am creating your HTML report now...."
         #$html1 = @()
