@@ -155,6 +155,8 @@ Function Get-ExoAdminAuditLogs {
             }
             Sayinfo "Progress: $($currentPageResultCount) of $($maxResultCount) ($([math]::round($percentComplete,2))%)"
             ## Display the current page results
+            $currentPageResult | Add-Member -MemberType NoteProperty -Name StartDate -Value $StartDate
+            $currentPageResult | Add-Member -MemberType NoteProperty -Name EndDate -Value $EndDate
             $currentPageResult #| Select-Object CreationDate, UserIds, Operations, AuditData, ResultIndex
         }
     }
