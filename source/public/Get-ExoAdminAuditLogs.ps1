@@ -21,6 +21,9 @@ Function Get-ExoAdminAuditLogs {
         $MaxRetryCount = 3
     )
 
+    $reportDate = (Get-Date)
+
+
     $FormatEnumerationLimit = -1
 
     ## Define the session ID and record type to use with the Search-UnifiedAuditLog cmdlet.
@@ -66,6 +69,7 @@ Function Get-ExoAdminAuditLogs {
     Say "Page Size: $($PageSize)"
     Say "Display Progress Bar: $($ShowProgress)"
     Say "Maximum Retries: $($MaxRetryCount)"
+    Say "Search Session Id: $($sessionID)"
     Say "......................................................................"
 
     if ([datetime]($StartDate) -eq [datetime]$EndDate) {
@@ -118,6 +122,9 @@ Function Get-ExoAdminAuditLogs {
         if (($isProblematic = IsResultProblematic -inputObject $currentPageResult) -and ($retryCount -le $maxRetryCount)) {
             $retryCount++
             $sessionID = (New-Guid).Guid
+            Say "......................................................................"
+            Say "New Search Session Id: $($sessionID)"
+            Say "......................................................................"
             SayInfo "Retry # $($retryCount)"
         }
     }
@@ -137,6 +144,9 @@ Function Get-ExoAdminAuditLogs {
     }
     SayInfo "Progress: $($currentPageResultCount) of $($maxResultCount) ($([math]::round($percentComplete,2))%)"
     ## Display the current page results
+    $currentPageResult | Add-Member -MemberType NoteProperty -Name ReportDate -Value $reportDate.ToUniversalTime()
+    $currentPageResult | Add-Member -MemberType NoteProperty -Name StartDate -Value (Get-Date $StartDate).ToUniversalTime()
+    $currentPageResult | Add-Member -MemberType NoteProperty -Name EndDate -Value (Get-Date $EndDate).ToUniversalTime()
     $currentPageResult #| Select-Object CreationDate, UserIds, Operations, AuditData, ResultIndex
 
     #EndRegion Initial 100 Records
@@ -155,8 +165,9 @@ Function Get-ExoAdminAuditLogs {
             }
             Sayinfo "Progress: $($currentPageResultCount) of $($maxResultCount) ($([math]::round($percentComplete,2))%)"
             ## Display the current page results
-            $currentPageResult | Add-Member -MemberType NoteProperty -Name StartDate -Value $StartDate
-            $currentPageResult | Add-Member -MemberType NoteProperty -Name EndDate -Value $EndDate
+            $currentPageResult | Add-Member -MemberType NoteProperty -Name ReportDate -Value $reportDate.ToUniversalTime()
+            $currentPageResult | Add-Member -MemberType NoteProperty -Name StartDate -Value (Get-Date $StartDate).ToUniversalTime()
+            $currentPageResult | Add-Member -MemberType NoteProperty -Name EndDate -Value (Get-Date $EndDate).ToUniversalTime()
             $currentPageResult #| Select-Object CreationDate, UserIds, Operations, AuditData, ResultIndex
         }
     }
