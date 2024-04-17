@@ -19,15 +19,7 @@ Function Write-ExoAdminAuditReport {
 
         [parameter()]
         [string]
-        $OutHtml,
-
-        [parameter()]
-        [string[]]
-        $ExcludeUserId = @(),
-
-        [parameter()]
-        [string[]]
-        $ExcludeCmdlet = @()
+        $OutHtml
     )
     Begin {
         #Region - Is Exchange Connected?
@@ -66,22 +58,10 @@ Function Write-ExoAdminAuditReport {
         $title = "Exchange Admin Audit Log Report for $($Organization)"
 
         $logCount = 0
-
-        [System.Collections.ArrayList]$data = @()
     }
 
     Process {
-
         foreach ($item in $InputObject) {
-            if ($item.UserIds -notin $ExcludeUserId -and $item.Operations -notin $ExcludeCmdlet) {
-                $null = $data.Add($item)
-            }
-
-        }
-
-    }
-    End {
-        foreach ($item in ($data | Sort-Object CreationDate -Descending)) {
             $audit_data = ($item.AuditData | ConvertFrom-Json)
             # $dateCollection += ($audit_data.CreationTime)
             $dateCollection += $item.CreationDate.ToLocalTime()
@@ -113,6 +93,8 @@ Function Write-ExoAdminAuditReport {
             $html2 += '</td></tr>'
             $logCount++
         }
+    }
+    End {
 
         if ($logCount -eq 0) {
             SayError "The report data is empty."
