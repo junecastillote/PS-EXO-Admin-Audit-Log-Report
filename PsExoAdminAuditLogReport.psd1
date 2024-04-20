@@ -21,13 +21,13 @@
     GUID              = '985a4128-bda8-4c7c-a764-c4684932d957'
 
     # Author of this module
-    Author            = 'tcastillotej'
+    Author            = 'June Castillote'
 
     # Company or vendor of this module
     CompanyName       = 'Unknown'
 
     # Copyright statement for this module
-    Copyright         = '(c) tcastillotej. All rights reserved.'
+    Copyright         = '(c) June Castillote. All rights reserved.'
 
     # Description of the functionality provided by this module
     # Description = ''
