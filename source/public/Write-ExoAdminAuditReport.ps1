@@ -26,6 +26,9 @@ Function Write-ExoAdminAuditReport {
         $ConvertToLocalTime
     )
     Begin {
+
+        $FormatEnumerationLimit = -1
+
         #Region - Is Exchange Connected?
         if (!($Organization)) {
             SayInfo "You did not specify the name of the organization."
@@ -53,33 +56,44 @@ Function Write-ExoAdminAuditReport {
         }
 
         # For use later to determine the oldest and newest entry
-        $dateCollection = @()
+        $dateCollection = [System.Collections.ArrayList]@()
 
         $ModuleInfo = Get-Module PsExoAdminAuditLogReport
         # $tz = ([System.TimeZoneInfo]::Local).DisplayName.ToString().Split(" ")[0]
-        # $today = Get-Date -Format "MMMM dd, yyyy HH:mm zzzz"
-        $today = Get-Date -Format "yyyy-MM-dd HH:mm:ss zzzz"
+        # $today = Get-Date -Format "MMMM dd, yyyy HH:mm"
+        # $today = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $css = Get-Content (($ModuleInfo.ModuleBase.ToString()) + '\source\private\style.css') -Raw
         $title = "Exchange Admin Audit Log Report for $($Organization)"
 
         $logCount = 0
+
+        if ($ConvertToLocalTime) {
+            $timeZone = [System.TimeZoneInfo]::Local
+        }
+        else {
+            $timeZone = [System.TimeZoneInfo]::Utc
+        }
     }
 
     Process {
         foreach ($item in $InputObject) {
             $audit_data = ($item.AuditData | ConvertFrom-Json)
             # $dateCollection += ($audit_data.CreationTime)
-            $creationDate = $(
-                if ($ConvertToLocalTime) {
-                    $item.CreationDate.ToLocalTime()
-                }
-                else {
-                    $item.CreationDate
-                }
-            )
-            $dateCollection += $creationDate
+            if ($ConvertToLocalTime) {
+                $creationDate = $item.CreationDate.ToLocalTime()
+                $startDate = $item.StartDate.ToLocalTime()
+                $endDate = $item.EndDate.ToLocalTime()
+                $reportDate = $item.ReportDate.ToLocalTime()
+            }
+            else {
+                $creationDate = $item.CreationDate
+                $startDate = $item.StartDate
+                $endDate = $item.EndDate
+                $reportDate = $item.ReportDate
+            }
+            $null = $dateCollection.Add($creationDate)
             $html2 += '<tr><td>'
-            $html2 += '<b>Time: </b>' + (Get-Date $creationDate -Format "yyyy-MM-dd HH:mm:ss zzzz") + '<br>'
+            $html2 += '<b>Time: </b>' + (Get-Date $creationDate -Format "yyyy-MM-dd HH:mm:ss") + '<br>'
             $html2 += '<b>Record Id: </b>' + $audit_data.Id + '<br>'
             $html2 += '<b>Admin Id: </b>' + $audit_data.UserId + '<br>'
             $html2 += '<b>Target Object: </b>' + $audit_data.ObjectId + '<br>'
@@ -105,8 +119,6 @@ Function Write-ExoAdminAuditReport {
             }
             $html2 += '</td></tr>'
             $logCount++
-            # $startDate = $item.StartDate
-            # $endDate = $item.StartDate
         }
     }
     End {
@@ -117,11 +129,11 @@ Function Write-ExoAdminAuditReport {
         }
 
         $dateCollection = $dateCollection | Sort-Object
-        $startDate = $dateCollection[0]
-        $endDate = $dateCollection[-1]
+        $latest_item_date = $dateCollection[0]
+        $oldest_item_date = $dateCollection[-1]
         SayInfo "Your report covers the period of $($startDate) to $($endDate)"
         SayInfo "I am creating your HTML report now...."
-        #$html1 = @()
+        # $html1 = @()
         $html1 += '<html><head><title>' + $title + '</title>'
         $html1 += '<style type="text/css">'
         $html1 += $css
@@ -131,21 +143,26 @@ Function Write-ExoAdminAuditReport {
         $html1 += '<tr><td class="head"</td></tr>'
         $html1 += '<tr><th class="section">Exchange Admin Activity Audit Report</th></tr>'
         $html1 += '<tr><td class="head"><b>' + $Organization + '</b></td></tr>'
-        $html1 += '<tr><td class="head"</td></tr>'
+        # $html1 += '<tr><td class="head"</td></tr>'
         $html1 += '</table>'
-
         $html1 += '<table id="tbl">'
+        $html1 += '<tr><td></td><br></tr>'
         $html1 += '<tr><td class="head"><b>' + 'Summary' + '</b></td></tr>'
-        $html1 += '<tr><td><b>Report time:</b> ' + $today + '<br>'
-        $html1 += '<b>Result coverage -</b><br>'
-        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Latest:</b> ' + $endDate.ToString("yyyy-MM-dd HH:mm:ss zzzz") + '<br>'
-        $html1 += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Oldest:</b> ' + $startDate.ToString("yyyy-MM-dd HH:mm:ss zzzz") + '<br>'
-        $html1 += '<b>Activity Count:</b> ' + $logCount
+        $html1 += '<tr><td></td><br></tr>'
+        $html1 += '<tr><td><b>Report - </b><br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Time zone : </b>' + $timezone.DisplayName + '<br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Date generated : </b>' + $reportDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Start date : </b>' + $startDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > End date : </b>' + $endDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
+        $html1 += '<b>Result - </b><br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Count : </b>' + $logCount + '<br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Oldest : </b>' + $oldest_item_date.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
+        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Newest : </b>' + $latest_item_date.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
         $html1 += '</td></tr>'
-        $html1 += '<tr><td class="head"</td></tr>'
         $html1 += '</table>'
         $html1 += '<table id="tbl">'
         $html1 += '<tr><td class="head"><b>' + 'Details' + '</b></td></tr>'
+        $html1 += '<tr><td></td><td></td><br></tr>'
         $html1 += '<tr><td><b>Event</td><td><b>Commands and Parameters</b></td></tr>'
 
         $html3 += '</table>'
@@ -177,11 +194,14 @@ Function Write-ExoAdminAuditReport {
         }
         SayInfo "Audit logs HTML report complete."
         Say "......................................................................"
-        Say "Report time      : $($today)"
-        Say "Activity count   : $($logCount)"
+        Say "Report time      : $($reportDate.ToString("yyyy-MM-dd HH:mm:ss"))"
+        Say "Report coverage  - "
+        Say "         Start   : $($startDate.ToString("yyyy-MM-dd HH:mm:ss") )"
+        Say "         End     : $($endDate.ToString("yyyy-MM-dd HH:mm:ss") )"
         Say "Result coverage  - "
-        Say "         Latest  : $($endDate.ToString("yyyy-MM-dd HH:mm:ss zzzz") )"
-        Say "         Oldest  : $($startDate.ToString("yyyy-MM-dd HH:mm:ss zzzz") )"
+        Say "         Latest  : $(($latest_item_date).ToString("yyyy-MM-dd HH:mm:ss") )"
+        Say "         Oldest  : $(($oldest_item_date).ToString("yyyy-MM-dd HH:mm:ss") )"
+        Say "Result count     : $($logCount)"
         Say "......................................................................"
     }
 }
