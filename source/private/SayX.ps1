@@ -11,7 +11,7 @@ Function Say {
     if ($Color) {
         # $Host.UI.RawUI.ForegroundColor = $Color
     }
-    $Text | Out-Default
+    $Text | Out-Host
     # [Console]::ResetColor()
 }
 
@@ -23,7 +23,7 @@ Function SayError {
         $Color = 'Red'
     )
     # $Host.UI.RawUI.ForegroundColor = $Color
-    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [ERROR] - $Text" | Out-Default
+    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [ERROR] - $Text" | Out-Host
     # [Console]::ResetColor()
 }
 
@@ -35,7 +35,7 @@ Function SayInfo {
         $Color = 'Green'
     )
     # $Host.UI.RawUI.ForegroundColor = $Color
-    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [INFO] - $Text" | Out-Default
+    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [INFO] - $Text" | Out-Host
     # [Console]::ResetColor()
 }
 
@@ -47,7 +47,7 @@ Function SayWarning {
         $Color = 'DarkYellow'
     )
     # $Host.UI.RawUI.ForegroundColor = $Color
-    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [WARNING] - $Text" | Out-Default
+    "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [WARNING] - $Text" | Out-Host
     # [Console]::ResetColor()
 }
 
