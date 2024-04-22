@@ -9,10 +9,10 @@ Function Say {
 
     # $originalForegroundColor = $Host.UI.RawUI.ForegroundColor
     if ($Color) {
-        $Host.UI.RawUI.ForegroundColor = $Color
+        # $Host.UI.RawUI.ForegroundColor = $Color
     }
     $Text | Out-Default
-    [Console]::ResetColor()
+    # [Console]::ResetColor()
 }
 
 Function SayError {
@@ -22,9 +22,9 @@ Function SayError {
         [Parameter()]
         $Color = 'Red'
     )
-    $Host.UI.RawUI.ForegroundColor = $Color
+    # $Host.UI.RawUI.ForegroundColor = $Color
     "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [ERROR] - $Text" | Out-Default
-    [Console]::ResetColor()
+    # [Console]::ResetColor()
 }
 
 Function SayInfo {
@@ -34,9 +34,9 @@ Function SayInfo {
         [Parameter()]
         $Color = 'Green'
     )
-    $Host.UI.RawUI.ForegroundColor = $Color
+    # $Host.UI.RawUI.ForegroundColor = $Color
     "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [INFO] - $Text" | Out-Default
-    [Console]::ResetColor()
+    # [Console]::ResetColor()
 }
 
 Function SayWarning {
@@ -46,8 +46,8 @@ Function SayWarning {
         [Parameter()]
         $Color = 'DarkYellow'
     )
-    $Host.UI.RawUI.ForegroundColor = $Color
+    # $Host.UI.RawUI.ForegroundColor = $Color
     "$(Get-Date -Format 'dd-MMM-yyyy HH:mm:ss') : [WARNING] - $Text" | Out-Default
-    [Console]::ResetColor()
+    # [Console]::ResetColor()
 }
 
