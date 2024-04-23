@@ -170,7 +170,7 @@ Function Write-ExoAdminAuditReport {
         $html3 += '<tr><td class="head"</td></tr>'
         $html3 += '<tr><td class="head"</td></tr>'
         $html3 += '<tr><td class="head"><a href="' + $ModuleInfo.ProjectURI.AbsoluteUri + '" target="_blank">' + $ModuleInfo.Name.ToString() + ' v' + $ModuleInfo.Version.ToString() + ' </td></a><br>'
-        $html3 += '<tr><td class="head"</td></tr>'
+        $html3 += '<tr><td class="head"></td></tr>'
         $html3 += '</body></html>'
 
         $htmlBody = ($html1 + $html2 + $html3) -join "`n"
