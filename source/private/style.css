@@ -9,6 +9,7 @@
 #tbl th {
     font-size: 13px;
     border-bottom: 1px solid #ccc;
+    border-top: 1px solid #ccc;
     padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 10px;
