@@ -9,6 +9,7 @@ Function Get-ExoAdminAuditLogs {
         $EndDate,
 
         [Parameter(Position = 2)]
+        [ValidateRange(500, 5000)]
         [int]
         $PageSize = 500,
 

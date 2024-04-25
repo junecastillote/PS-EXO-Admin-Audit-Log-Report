@@ -58,7 +58,8 @@ Function Write-ExoAdminAuditReport {
         # For use later to determine the oldest and newest entry
         $dateCollection = [System.Collections.ArrayList]@()
 
-        $ModuleInfo = Get-Module PsExoAdminAuditLogReport
+        # $ModuleInfo = Get-Module PsExoAdminAuditLogReport
+        $ModuleInfo = $PSCmdlet.MyInvocation.MyCommand.Module
         # $tz = ([System.TimeZoneInfo]::Local).DisplayName.ToString().Split(" ")[0]
         # $today = Get-Date -Format "MMMM dd, yyyy HH:mm"
         # $today = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
