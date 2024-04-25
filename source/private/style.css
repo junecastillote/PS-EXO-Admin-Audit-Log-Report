@@ -1,0 +1,60 @@
+#tbl {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    width: 100%;
+    border-collapse: collapse;
+    /* table-layout: auto; */
+}
+
+#tbl td,
+#tbl th {
+    font-size: 13px;
+    border-bottom: 1px solid #ccc;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    /* width: fit-content; */
+}
+
+#tbl td.head {
+    font-size: 18px;
+    border: none;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#tbl th {
+    font-size: 14px;
+    background-color: #fff;
+    text-align: left;
+    vertical-align: top;
+    color: #252522;
+
+}
+
+#tbl th.section {
+    font-family: "Tahoma";
+    font-weight: bold;
+    font-size: 26px;
+    text-align: left;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background-color: #fff;
+    color: #000;
+    vertical-align: center;
+    border: none;
+}
+
+#tbl td {
+    text-align: left;
+    vertical-align: top;
+    color: #252522;
+    /* width:max-content; */
+    /* word-break: break-all; */
+    /* word-wrap: break-word; */
+}
