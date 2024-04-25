@@ -134,6 +134,11 @@ Function Get-ExoAdminAuditLogs {
     $maxResultCount = $($currentPageResult[-1].ResultCount)
     SayInfo "Total entries: $($maxResultCount)"
 
+    ## Exit script if no results
+    if ($maxResultCount -lt 1) {
+        return $null
+    }
+
     ## Set the current page result count.
     $currentPageResultCount = $($currentPageResult[-1].ResultIndex)
     ## Compute the completion percentage
