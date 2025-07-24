@@ -189,7 +189,7 @@ Function Write-ExoAdminAuditReport {
         }
         else {
             SayInfo "I've created the report object for you, which is basically just an HTML code in my memory."
-            SayInfo "If you wanted to save the report to an HTML file, you should use the -ReportFile <path to report.html> parameter."
+            SayInfo "If you wanted to save the report to an HTML file, you should use the -OutHtml <path to report.html> parameter."
             SayInfo "Or, you can just pipe the report out to file like ' | Out-File report.html'. But you should already know how to do that."
             $htmlBody
         }
