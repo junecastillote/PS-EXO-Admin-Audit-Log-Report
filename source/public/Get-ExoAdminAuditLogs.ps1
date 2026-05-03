@@ -113,7 +113,7 @@ function Get-ExoAdminAuditLogs {
         }
 
         $results.AddRange(
-            (
+            @(
                 $currentPage | Select-Object *, @{
                     Name  = 'ReportDate'
                     Value = $reportDate
