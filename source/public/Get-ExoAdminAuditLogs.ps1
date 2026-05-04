@@ -116,13 +116,16 @@ function Get-ExoAdminAuditLogs {
             @(
                 $currentPage | Select-Object *, @{
                     Name  = 'ReportDate'
-                    Value = $reportDate
+                    Expression = {$($reportDate)}
+                    # Value = $reportDate
                 }, @{
                     Name  = 'StartDate'
-                    Value = $StartDate.ToUniversalTime()
+                    Expression = {$($StartDate.ToUniversalTime())}
+                    # Value = $StartDate.ToUniversalTime()
                 }, @{
                     Name  = 'EndDate'
-                    Value = $EndDate.ToUniversalTime()
+                    Expression = {$($EndDate.ToUniversalTime())}
+                    # Value = $EndDate.ToUniversalTime()
                 }
             )
         )
