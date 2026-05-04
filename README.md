@@ -15,7 +15,7 @@ Clone or download the module, then import it:
 
 ```powershell
 # Example path
-Import-Module "C:\Path\To\PS-EXO-Admin-Audit-Log-Report\PsExoAdminAuditLogReport.psm1"
+Import-Module "C:\Path\To\PS-EXO-Admin-Audit-Log-Report\PsExoAdminAuditLogReport.psd1"
 ```
 
 > ℹ️ Requires Exchange Online PowerShell module (`ExchangeOnlineManagement`) and connection to Exchange Online.
@@ -30,13 +30,13 @@ The module exposes two public functions:
 
 Queries Exchange Online admin audit logs between the specified start and end dates.
 
-#### Syntax
+#### Syntax (`Get-ExoAdminAuditLogs`)
 
 ```powershell
 Get-ExoAdminAuditLogs [-StartDate] <Object> [-EndDate] <Object> [[-PageSize] <int>] [-ShowProgress <bool>] [-MaxRetryCount <int>] [<CommonParameters>]
 ```
 
-#### Parameters
+#### Parameters (`Get-ExoAdminAuditLogs`)
 
 | Name            | Type     | Description                                                                                    | Required |
 | --------------- | -------- | ---------------------------------------------------------------------------------------------- | -------- |
@@ -46,7 +46,7 @@ Get-ExoAdminAuditLogs [-StartDate] <Object> [-EndDate] <Object> [[-PageSize] <in
 | `PageSize`      | Integer  | Set the number of results to return on each run.<br>The default value is 500, maximum is 5000. | No       |
 | `MaxRetryCount` | Integer  | The number of tries to retry if the previous extraction has an error.                          | No       |
 
-#### Example
+#### Example (`Get-ExoAdminAuditLogs`)
 
 ```powershell
 Get-ExoAdminAuditLogs -StartDate (Get-Date).AddDays(-7) -EndDate (Get-Date)
@@ -58,13 +58,13 @@ Get-ExoAdminAuditLogs -StartDate (Get-Date).AddDays(-7) -EndDate (Get-Date)
 
 Takes output from `Get-ExoAdminAuditLogs` and writes it to a CSV file.
 
-#### Syntax
+#### Syntax (`Write-ExoAdminAuditReport`)
 
 ```powershell
 Write-ExoAdminAuditReport [-InputObject] <Object> [-Organization <string>] [-TruncateLongValue <int>] [-OutHtml <string>] [-ConvertToLocalTime] [<CommonParameters>]
 ```
 
-#### Parameters
+#### Parameters (`Write-ExoAdminAuditReport`)
 
 | Name                 | Type   | Description                                                             | Required |
 | -------------------- | ------ | ----------------------------------------------------------------------- | -------- |
@@ -74,7 +74,7 @@ Write-ExoAdminAuditReport [-InputObject] <Object> [-Organization <string>] [-Tru
 | `ConvertToLocalTime` | Switch | Converts the datetime values in the report from UTC to local time zone. | No       |
 | `TruncateLongValue`  | Int    | Truncate long values to a specific maximum number of characters.        | No       |
 
-#### Example
+#### Example (`Write-ExoAdminAuditReport`)
 
 ```powershell
 $auditLogs = Get-ExoAdminAuditLogs -StartDate (Get-Date).AddDays(-30) -EndDate (Get-Date)
