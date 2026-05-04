@@ -43,7 +43,6 @@ function Get-ExoAdminAuditLogs {
     Say "Start Date: $($StartDate)"
     Say "End Date: $($EndDate)"
     Say "Page Size: $($PageSize)"
-    # Say "Display Progress Bar: $($ShowProgress)"
     Say "Maximum Retries: $($MaxRetryCount)"
     Say "Search Session Id: $($sessionID)"
     Say "......................................................................"
