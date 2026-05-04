@@ -27,14 +27,8 @@ function Get-ExoAdminAuditLogs {
     $retryCount = 0
     $sessionID = (New-Guid).Guid
     $results = [System.Collections.Generic.List[object]]::new()
-
-    # Keep caller state safe
-    $oldProgressPreference = $ProgressPreference
-    $ProgressPreference = 'Continue'
-
-    if ($PSVersionTable.PSEdition -eq 'Core') {
-        $PSStyle.Progress.View = 'Classic'
-    }
+    $pageIndex = 0
+    $totalResult = 0
 
     try {
         $null = (Get-OrganizationConfig -ErrorAction Stop).DisplayName
@@ -43,6 +37,16 @@ function Get-ExoAdminAuditLogs {
         SayError "Not connected to Exchange Online."
         return
     }
+
+    SayInfo "Using the following parameters:"
+    Say "......................................................................"
+    Say "Start Date: $($StartDate)"
+    Say "End Date: $($EndDate)"
+    Say "Page Size: $($PageSize)"
+    # Say "Display Progress Bar: $($ShowProgress)"
+    Say "Maximum Retries: $($MaxRetryCount)"
+    Say "Search Session Id: $($sessionID)"
+    Say "......................................................................"
 
     if ($EndDate -le $StartDate) {
         SayError "EndDate must be greater than StartDate."
@@ -70,6 +74,8 @@ function Get-ExoAdminAuditLogs {
         )
     }
 
+    SayInfo "Starting audit logs extraction."
+
     # -------------------------
     # Initial Page + Retry Logic
     # -------------------------
@@ -77,7 +83,7 @@ function Get-ExoAdminAuditLogs {
         $currentPage = @(& $ExtractAuditLogs)
 
         if (-not $currentPage) {
-            SayInfo "No results found."
+            # SayInfo "No results found."
             return
         }
 
@@ -94,38 +100,25 @@ function Get-ExoAdminAuditLogs {
 
     } while (IsResultProblematic $currentPage)
 
-    $maxResultCount = $currentPage[-1].ResultCount
-    if ($maxResultCount -lt 1) { return }
-
     # -------------------------
     # Paging Loop
     # -------------------------
     do {
-
-        $currentIndex = $currentPage[-1].ResultIndex
-        $percent = [math]::Min(100, ($currentIndex * 100) / $maxResultCount)
-
-        if ($ShowProgress) {
-            Write-Progress `
-                -Activity "Getting Exchange Admin Audit Log [$StartDate - $EndDate]" `
-                -Status "Progress: $currentIndex of $maxResultCount ($([math]::Round($percent,2))%)" `
-                -PercentComplete $percent
-        }
+        $pageIndex++
+        $totalResult += $currentPage.Count
+        SayInfo "Progress: Page $pageIndex, Total = $totalResult"
 
         $results.AddRange(
             @(
                 $currentPage | Select-Object *, @{
-                    Name  = 'ReportDate'
-                    Expression = {$($reportDate)}
-                    # Value = $reportDate
+                    Name       = 'ReportDate'
+                    Expression = { $($reportDate) }
                 }, @{
-                    Name  = 'StartDate'
-                    Expression = {$($StartDate.ToUniversalTime())}
-                    # Value = $StartDate.ToUniversalTime()
+                    Name       = 'StartDate'
+                    Expression = { $($StartDate.ToUniversalTime()) }
                 }, @{
-                    Name  = 'EndDate'
-                    Expression = {$($EndDate.ToUniversalTime())}
-                    # Value = $EndDate.ToUniversalTime()
+                    Name       = 'EndDate'
+                    Expression = { $($EndDate.ToUniversalTime()) }
                 }
             )
         )
@@ -133,15 +126,8 @@ function Get-ExoAdminAuditLogs {
         $currentPage = @(& $ExtractAuditLogs)
 
     } while (
-        $currentPage.Count -gt 0 -and
-        $currentIndex -lt $maxResultCount
+        $currentPage.Count -gt 0
     )
-
-    if ($ShowProgress) {
-        Write-Progress -Activity "Getting Exchange Admin Audit Log" -Completed
-    }
-
-    $ProgressPreference = $oldProgressPreference
 
     SayInfo "Audit logs extraction complete."
 
