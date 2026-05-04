@@ -1,208 +1,167 @@
-Function Write-ExoAdminAuditReport {
+function Write-ExoAdminAuditReport {
+
     [CmdletBinding()]
     param (
-        [parameter(
-            Mandatory,
-            Position = 0,
-            ValueFromPipeline
-        )]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         $InputObject,
 
-        [parameter()]
-        [string]
-        $Organization,
-
-        [parameter()]
-        [int]
-        $TruncateLongValue,
-
-        [parameter()]
-        [string]
-        $OutHtml,
-
-        [parameter()]
-        [Switch]
-        $ConvertToLocalTime
+        [string] $Organization,
+        [int]    $TruncateLongValue,
+        [string] $OutHtml,
+        [switch] $ConvertToLocalTime
     )
-    Begin {
 
+    begin {
+
+        Add-Type -AssemblyName System.Web
         $FormatEnumerationLimit = -1
 
-        #Region - Is Exchange Connected?
-        if (!($Organization)) {
-            SayInfo "You did not specify the name of the organization."
+        if (-not $Organization) {
             try {
-                SayInfo "Attempting to get the organization name."
-                $Organization = (Get-OrganizationConfig -ErrorAction STOP).DisplayName
-                SayInfo "Found it! Your organization name is $($Organization)"
-            }
-            catch [System.Management.Automation.CommandNotFoundException] {
-                SayWarning "It looks like you forgot to connect to Remote Exchange PowerShell. You should do that first."
-                SayWarning "Or you can just specify your organization name next time so that I don't have to look for it for you. The parameter is -Organization <organization name>."
-                return $null
+                $Organization = (Get-OrganizationConfig -ErrorAction Stop).DisplayName
             }
             catch {
-                SayError "Something is wrong. You can see the error below. I can't tell you how to fix it, but you should fix it before retrying."
-                SayError $_.Exception.Message
-                return $null
+                SayError "Not connected to Exchange Online and -Organization was not provided."
+                return
             }
         }
-
-        #EndRegion
 
         if ($OutHtml) {
-            New-Item -ItemType File -Path $OutHtml -Force -ErrorAction Stop | Out-Null
+            New-Item -ItemType File -Path $OutHtml -Force | Out-Null
         }
 
-        # For use later to determine the oldest and newest entry
-        $dateCollection = [System.Collections.ArrayList]@()
-
-        # $ModuleInfo = Get-Module PsExoAdminAuditLogReport
-        $ModuleInfo = $PSCmdlet.MyInvocation.MyCommand.Module
-        # $tz = ([System.TimeZoneInfo]::Local).DisplayName.ToString().Split(" ")[0]
-        # $today = Get-Date -Format "MMMM dd, yyyy HH:mm"
-        # $today = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $css = Get-Content (($ModuleInfo.ModuleBase.ToString()) + '\source\private\style.css') -Raw
-        $title = "Exchange Admin Audit Log Report for $($Organization)"
-
+        $dateCollection = [System.Collections.Generic.List[datetime]]::new()
         $logCount = 0
 
-        if ($ConvertToLocalTime) {
-            $timeZone = [System.TimeZoneInfo]::Local
+        $moduleInfo = $PSCmdlet.MyInvocation.MyCommand.Module
+        $css = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\style.css') -Raw
+        $title = "Exchange Admin Audit Log Report for $Organization"
+        $reportDate = Get-Date
+
+        # Time handling (single source of truth)
+        $toDisplayTime = {
+            param($dt)
+            if ($ConvertToLocalTime) { $dt.ToLocalTime() } else { $dt }
+        }
+
+        $timeZone = if ($ConvertToLocalTime) {
+            [System.TimeZoneInfo]::Local
         }
         else {
-            $timeZone = [System.TimeZoneInfo]::Utc
+            [System.TimeZoneInfo]::Utc
         }
+
+        # HTML builders
+        $htmlRows = [System.Text.StringBuilder]::new()
     }
 
-    Process {
+    process {
+
         foreach ($item in $InputObject) {
-            $audit_data = ($item.AuditData | ConvertFrom-Json)
-            # $dateCollection += ($audit_data.CreationTime)
-            if ($ConvertToLocalTime) {
-                $creationDate = $item.CreationDate.ToLocalTime()
-                $startDate = $item.StartDate.ToLocalTime()
-                $endDate = $item.EndDate.ToLocalTime()
-                $reportDate = $item.ReportDate.ToLocalTime()
-            }
-            else {
-                $creationDate = $item.CreationDate
-                $startDate = $item.StartDate
-                $endDate = $item.EndDate
-                $reportDate = $item.ReportDate
-            }
+
+            $audit = $item.AuditData | ConvertFrom-Json
+
+            $creationDate = & $toDisplayTime $item.CreationDate
+            $startDate = & $toDisplayTime $item.StartDate
+            $endDate = & $toDisplayTime $item.EndDate
+
             $null = $dateCollection.Add($creationDate)
-            $html2 += '<tr><td>'
-            $html2 += '<b>Time: </b>' + (Get-Date $creationDate -Format "yyyy-MM-dd HH:mm:ss") + '<br>'
-            $html2 += '<b>Record Id: </b>' + $audit_data.Id + '<br>'
-            $html2 += '<b>Admin Id: </b>' + $audit_data.UserId + '<br>'
-            $html2 += '<b>Target Object: </b>' + $audit_data.ObjectId + '<br>'
-            $html2 += '</td>'
-            $html2 += '<td><b>' + $audit_data.Operation + '</b><br><br>'
-            foreach ($param in $audit_data.Parameters) {
-                if ($TruncateLongValue) {
-                    if ($param.Value.length -gt $TruncateLongValue) {
-                        $paramValue = ((($param.Value).ToString().SubString(0, $TruncateLongValue)) + "...")
-                    }
-                    else {
-                        $paramValue = $param.Value
-                    }
-                }
-                else {
-                    $paramValue = $param.Value
+
+            [void]$htmlRows.AppendLine('<tr><td>')
+            [void]$htmlRows.AppendLine("<b>Time:</b> $($creationDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>")
+            [void]$htmlRows.AppendLine("<b>Record Id:</b> $($audit.Id)<br>")
+            [void]$htmlRows.AppendLine("<b>Admin Id:</b> $($audit.UserId)<br>")
+            [void]$htmlRows.AppendLine("<b>Target Object:</b> $($audit.ObjectId)<br>")
+            [void]$htmlRows.AppendLine('</td><td>')
+            [void]$htmlRows.AppendLine("<b>$($audit.Operation)</b><br><br>")
+
+            foreach ($param in $audit.Parameters) {
+
+                $value = $param.Value
+
+                if ($TruncateLongValue -and $value.Length -gt $TruncateLongValue) {
+                    $value = $value.Substring(0, $TruncateLongValue) + '...'
                 }
 
-                ## This line prevents rendering the HTML code in auto-reply messages.
-                $paramValue = $paramValue.ToString().Replace('<', '&lt;').Replace('>', '&gt;')
+                $value = [System.Web.HttpUtility]::HtmlEncode($value)
 
-                $html2 += ('<b>' + $param.Name + ':</b> ' + $paramValue + '<br>')
+                [void]$htmlRows.AppendLine("<b>$($param.Name):</b> $value<br>")
             }
-            $html2 += '</td></tr>'
+
+            [void]$htmlRows.AppendLine('</td></tr>')
+
             $logCount++
         }
     }
-    End {
+
+    end {
 
         if ($logCount -eq 0) {
             SayError "The report data is empty."
-            Return $null
+            return
         }
 
-        $dateCollection = $dateCollection | Sort-Object
-        $latest_item_date = $dateCollection[0]
-        $oldest_item_date = $dateCollection[-1]
-        SayInfo "Your report covers the period of $($startDate) to $($endDate)"
-        SayInfo "I am creating your HTML report now...."
-        # $html1 = @()
-        $html1 += '<html><head><title>' + $title + '</title>'
-        $html1 += '<style type="text/css">'
-        $html1 += $css
-        $html1 += '</style></head>'
-        $html1 += '<body>'
-        $html1 += '<table id="tbl">'
-        # $html1 += '<tr><td class="head"></td></tr>'
-        $html1 += '<tr><th class="section">Exchange Admin Activity Audit Report</th></tr>'
-        $html1 += '<tr><td class="head"><b>' + $Organization + '</b></td></tr>'
-        # $html1 += '<tr><td class="head"></td></tr>'
-        $html1 += '</table>'
-        $html1 += '<table id="tbl">'
-        # $html1 += '<tr><td></td><br></tr>'
-        # $html1 += '<tr><td class="head"><b>' + 'Summary' + '</b></td></tr>'
-        # $html1 += '<tr><td></td><br></tr>'
-        $html1 += '<tr><td><b>Report - </b><br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Time zone : </b>' + $timezone.DisplayName + '<br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Date generated : </b>' + $reportDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Start date : </b>' + $startDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > End date : </b>' + $endDate.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
-        $html1 += '<b>Result - </b><br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Count : </b>' + $logCount + '<br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Oldest : </b>' + $oldest_item_date.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
-        $html1 += '<b>' + ('&nbsp;' * 5) + ' > Newest : </b>' + $latest_item_date.ToString("yyyy-MM-dd HH:mm:ss") + '<br>'
-        $html1 += '</td></tr>'
-        $html1 += '</table>'
-        $html1 += '<table id="tbl">'
-        # $html1 += '<tr><td class="head"><b>' + 'Details' + '</b></td></tr>'
-        # $html1 += '<tr><td></td><td></td><br></tr>'
-        $html1 += '<tr><td><b>Event</td><td><b>Commands and Parameters</b></td></tr>'
+        $dateCollection.Sort()
+        $latest = $dateCollection[-1]
+        $oldest = $dateCollection[0]
 
-        $html3 += '</table>'
-        $html3 += '<table id="tbl">'
-        $html3 += '<tr><td class="head"></td></tr>'
-        $html3 += '<tr><td class="head"></td></tr>'
-        $html3 += '<tr><td class="head"><a href="' + $ModuleInfo.ProjectURI.AbsoluteUri + '" target="_blank">' + $ModuleInfo.Name.ToString() + ' v' + $ModuleInfo.Version.ToString() + ' </td></a><br>'
-        $html3 += '<tr><td class="head"></td></tr>'
-        $html3 += '</body></html>'
+        $html = @"
+<html>
+<head>
+<title>$title</title>
+<style>
+$css
+</style>
+</head>
+<body>
 
-        $htmlBody = ($html1 + $html2 + $html3) -join "`n"
+<table id="tbl">
+<tr><th class="section">Exchange Admin Activity Audit Report</th></tr>
+<tr><td class="head"><b>$Organization</b></td></tr>
+</table>
+
+<table id="tbl">
+<tr><td>
+<b>Report</b><br>
+&nbsp;&nbsp;&nbsp;&gt; Time zone : $($timeZone.DisplayName)<br>
+&nbsp;&nbsp;&nbsp;&gt; Date generated : $($reportDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
+&nbsp;&nbsp;&nbsp;&gt; Start date : $($startDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
+&nbsp;&nbsp;&nbsp;&gt; End date : $($endDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
+<b>Result</b><br>
+&nbsp;&nbsp;&nbsp;&gt; Count : $logCount<br>
+&nbsp;&nbsp;&nbsp;&gt; Oldest : $($oldest.ToString("yyyy-MM-dd HH:mm:ss"))<br>
+&nbsp;&nbsp;&nbsp;&gt; Newest : $($latest.ToString("yyyy-MM-dd HH:mm:ss"))<br>
+</td></tr>
+</table>
+
+<table id="tbl">
+<tr><td><b>Event</b></td><td><b>Commands and Parameters</b></td></tr>
+$($htmlRows.ToString())
+</table>
+
+<table id="tbl">
+<tr>
+<td class="head">
+<a href="$($moduleInfo.ProjectURI.AbsoluteUri)" target="_blank">
+$($moduleInfo.Name) v$($moduleInfo.Version)
+</a>
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+"@
+
         if ($OutHtml) {
-            try {
-                $htmlBody | Out-File $OutHtml -Encoding UTF8 -Force -ErrorAction Stop
-                SayInfo "You can find the report at $((Resolve-Path $OutHtml).Path)."
-                # return $htmlBody
-            }
-            catch {
-                SayError "Something is wrong. You can see the error below. Because of it I cannot save your report to file. Please fix it."
-                SayError $_.Exception.Message
-                return $null
-            }
+            $html | Out-File $OutHtml -Encoding UTF8
+            SayInfo "Report written to $((Resolve-Path $OutHtml).Path)"
         }
         else {
-            SayInfo "I've created the report object for you, which is basically just an HTML code in my memory."
-            SayInfo "If you wanted to save the report to an HTML file, you should use the -OutHtml <path to report.html> parameter."
-            SayInfo "Or, you can just pipe the report out to file like ' | Out-File report.html'. But you should already know how to do that."
-            $htmlBody
+            $html
         }
+
         SayInfo "Audit logs HTML report complete."
-        Say "......................................................................"
-        Say "Report time      : $($reportDate.ToString("yyyy-MM-dd HH:mm:ss"))"
-        Say "Report coverage  - "
-        Say "         Start   : $($startDate.ToString("yyyy-MM-dd HH:mm:ss") )"
-        Say "         End     : $($endDate.ToString("yyyy-MM-dd HH:mm:ss") )"
-        Say "Result coverage  - "
-        Say "         Latest  : $(($latest_item_date).ToString("yyyy-MM-dd HH:mm:ss") )"
-        Say "         Oldest  : $(($oldest_item_date).ToString("yyyy-MM-dd HH:mm:ss") )"
-        Say "Result count     : $($logCount)"
-        Say "......................................................................"
     }
 }
