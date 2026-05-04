@@ -35,7 +35,8 @@ function Write-ExoAdminAuditReport {
         $logCount = 0
 
         $moduleInfo = $PSCmdlet.MyInvocation.MyCommand.Module
-        $css = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\style.css') -Raw
+        $html = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\template.html') -Raw
+        # $css = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\style.css') -Raw
         $title = "Exchange Admin Audit Log Report for $Organization"
         $reportDate = Get-Date
 
@@ -106,53 +107,20 @@ function Write-ExoAdminAuditReport {
         $latest = $dateCollection[-1]
         $oldest = $dateCollection[0]
 
-        $html = @"
-<html>
-<head>
-<title>$title</title>
-<style>
-$css
-</style>
-</head>
-<body>
-
-<table id="tbl">
-<tr><th class="section">Exchange Admin Activity Audit Report</th></tr>
-<tr><td class="head"><b>$Organization</b></td></tr>
-</table>
-
-<table id="tbl">
-<tr><td>
-<b>Report</b><br>
-&nbsp;&nbsp;&nbsp;&gt; Time zone : $($timeZone.DisplayName)<br>
-&nbsp;&nbsp;&nbsp;&gt; Date generated : $($reportDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
-&nbsp;&nbsp;&nbsp;&gt; Start date : $($startDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
-&nbsp;&nbsp;&nbsp;&gt; End date : $($endDate.ToString("yyyy-MM-dd HH:mm:ss"))<br>
-<b>Result</b><br>
-&nbsp;&nbsp;&nbsp;&gt; Count : $logCount<br>
-&nbsp;&nbsp;&nbsp;&gt; Oldest : $($oldest.ToString("yyyy-MM-dd HH:mm:ss"))<br>
-&nbsp;&nbsp;&nbsp;&gt; Newest : $($latest.ToString("yyyy-MM-dd HH:mm:ss"))<br>
-</td></tr>
-</table>
-
-<table id="tbl">
-<tr><td><b>Event</b></td><td><b>Commands and Parameters</b></td></tr>
-$($htmlRows.ToString())
-</table>
-
-<table id="tbl">
-<tr>
-<td class="head">
-<a href="$($moduleInfo.ProjectURI.AbsoluteUri)" target="_blank">
-$($moduleInfo.Name) v$($moduleInfo.Version)
-</a>
-</td>
-</tr>
-</table>
-
-</body>
-</html>
-"@
+        $rowHead = "<tr><td><b>Event</b></td><td><b>Commands and Parameters</b></td></tr>"
+        $html = $html.Replace("vTitle", $title
+        ).Replace("vOrganization", $Organization
+        ).Replace("vTimeZone", $($timeZone.DisplayName)
+        ).Replace("vReportDate", $($reportDate.ToString("yyyy-MM-dd HH:mm:ss"))
+        ).Replace("vStartDate", $($startDate.ToString("yyyy-MM-dd HH:mm:ss"))
+        ).Replace("vEndDate", $($endDate.ToString("yyyy-MM-dd HH:mm:ss"))
+        ).Replace("vCount", $logCount
+        ).Replace("vNewest", $($latest.ToString("yyyy-MM-dd HH:mm:ss"))
+        ).Replace("vOldest", $($oldest.ToString("yyyy-MM-dd HH:mm:ss"))
+        ).Replace("vRowItems", $($htmlRows.ToString())
+        ).Replace("vRepoUrl", $($moduleInfo.ProjectURI.AbsoluteUri)
+        ).Replace("vModuleInfo", $("$($moduleInfo.Name) v$($moduleInfo.Version)")
+        ).Replace("vRowHead", $rowHead)
 
         if ($OutHtml) {
             $html | Out-File $OutHtml -Encoding UTF8
