@@ -36,7 +36,6 @@ function Write-ExoAdminAuditReport {
 
         $moduleInfo = $PSCmdlet.MyInvocation.MyCommand.Module
         $html = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\template.html') -Raw
-        # $css = Get-Content (Join-Path $moduleInfo.ModuleBase 'source\private\style.css') -Raw
         $title = "Exchange Admin Audit Log Report for $Organization"
         $reportDate = Get-Date
 
